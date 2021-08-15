@@ -9,6 +9,9 @@ easy enough you reconsider using other library (ie: React, Vue & friends)
 
 Based on the same principles of [contemplating](https://github.com/drawm/contemplating/)
 
+* [Deno](https://deno.land/x/ezelement)
+* [NPM](https://www.npmjs.com/package/ezelement)
+
 # Usage
 
 For more examples, check the [examples/](examples/ folder) in the repo.
@@ -39,7 +42,7 @@ For more examples, check the [examples/](examples/ folder) in the repo.
 ```
 
 ## Attributes
-You can specify a set of attributes who will re-render the component when changed. 
+You can specify a set of attributes who will re-render the component when changed.
 Read [Using the life cycle callback article on MDN](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks) to understand how it works internally.
 
 All you need to do is:
@@ -65,7 +68,7 @@ All you need to do is:
 <script type="application/javascript">
   const onChangeName = (event) => {
     const newName = document.getElementById('nameInput').value;
-    
+
     // Will trigger a re-render of the component
     document.getElementById('greeting').setAttribute('name', newName);
   }
@@ -196,9 +199,9 @@ For even better templating you can use [contemplating](https://github.com/drawm/
 # Features
 * No over-rendering, EZElement will only render once per frame at most.
 * JSX style templating & event callbacks without transpiling
-* No binding or wrapping methods 
+* No binding or wrapping methods
 * No dependencies
 * Small codebase:
-  * Fits in one file under 350 lines of Typescript code 
+  * Fits in one file under 350 lines of Typescript code
   * Or under 225 transpiled non minified js code
   * Or 4KB, (~4000 characters) minified js code
