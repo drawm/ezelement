@@ -222,40 +222,4 @@ const html1 = (element)=>(strings, ...args)=>{
     }
 ;
 export { html1 as html };
-function template1(strings, ...values) {
-    if (Array.isArray(strings[0])) {
-        [strings, ...values] = strings;
-    }
-    let acc = '';
-    for(let i = 0; i < strings.length; i++){
-        acc += strings[i];
-        if (Array.isArray(values[i])) {
-            acc += values[i].map((value)=>value ?? ''
-            ).join('');
-        } else {
-            acc += values[i] ?? '';
-        }
-    }
-    return acc;
-}
-function print1(text, defaultText = '') {
-    return !!text ? text : defaultText;
-}
-const loop1 = (list, callback)=>{
-    let acc = '';
-    const state2 = {
-        isFirst: true,
-        isLast: false
-    };
-    for(let i = 0; i < list.length; i++){
-        const item = list[i];
-        state2.isLast = i === list.length - 1;
-        acc += callback(item, state2);
-        state2.isFirst = false;
-    }
-    return acc;
-};
 export { EZElement as default };
-export { template1 as template };
-export { print1 as print };
-export { loop1 as loop };
