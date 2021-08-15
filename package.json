@@ -1,6 +1,6 @@
 {
   "name": "ezelement",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Custom elements made easy",
   "main": "out/index.js",
   "author": "Damon Perron-Laurin",
