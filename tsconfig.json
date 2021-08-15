@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES5",
+    "lib": [
+      "ESNext",
+      "dom"
+    ],
+    "types": [
+      "./types.d.ts"
+    ]
+  }
+}

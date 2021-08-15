@@ -1,0 +1,9 @@
+{
+  "name": "ezelement",
+  "version": "1.0.0",
+  "description": "Custom elements made easy",
+  "main": "out/index.js",
+  "author": "Damon Perron-Laurin",
+  "license": "MIT",
+  "private": false
+}

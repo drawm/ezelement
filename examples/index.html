@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Training: Custom Element</title>
+  <script type="module">
+    import EZElement, {html} from "../out/index.js";
+
+    customElements.define('bonne-stjean', class BonneStJean extends EZElement {
+      constructor() {
+        super({
+          message: 'nobody',
+          celebrate: false,
+        });
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+        this.style.display = 'block';
+        this.init(parseInt(this.getAttribute('interval') ?? '0'));
+      }
+
+      render() {
+        return html(this)`
+              <style>
+                  span {
+                      color: ${this.state.celebrate ? 'blue' : 'red'};
+                  }
+              </style>
+              <span onclick="${this.onChangeStyle}">
+                  Hello ${this.state.message ?? 'nobody'}
+              </span>
+            `;
+      }
+
+      onChangeStyle() {
+        this.state.celebrate = !this.state.celebrate;
+        this.parentNode?.removeChild(this);
+      }
+
+      init(repeat = 0) {
+        setTimeout(() => {
+          let timerCount = 0;
+          const interval = setInterval(() => {
+            timerCount++;
+
+            if (timerCount < repeat) {
+              this.state.message = timerCount;
+            } else {
+              clearInterval(interval);
+              this.state.message = 'bonne st-jean!';
+              this.state.celebrate = true;
+            }
+          }, 100);
+        }, 700);
+      }
+    });
+
+
+    // Change state based on interval, re-render, and change interval based on UI interaction
+    customElements.define('stop-watch', class StopWatch extends EZElement {
+      constructor() {
+        super({
+          time: 0,
+          intervalID: undefined,
+        })
+      }
+
+      render() {
+        return html(this)`
+              <span>${this.state.time}</span>
+              <button onclick="${this.state.intervalID ? this.stopTimer : this.startTimer}">${this.state.intervalID ? 'stop' : 'start'}</button>
+          `;
+      }
+
+      startTimer() {
+        if (this.state.intervalID) {
+          return;
+        }
+        this.state.time = 0;
+        this.state.intervalID = setInterval(() => this.state.time += 1000, 1000);
+      }
+
+      stopTimer() {
+        clearInterval(this.state.intervalID);
+        this.state.intervalID = undefined;
+      }
+
+    });
+
+    // html attributes change cause re-render
+    customElements.define('input-change', class InputChange extends EZElement {
+      static observedAttributes = ['type'];
+
+      render() {
+        const type = this.getAttribute('type');
+        return html(this)`
+          <div>
+            <select onchange="${this.onSelectType}">
+              ${['checkbox', 'radio', 'button'].map(option => `
+                <option value="${option}" ${type === option ? 'selected' : ''}>${option}</option>
+              `)}
+            </select>
+            <label for="input_change">
+              ${type}
+              <input id="input_change" type="${type}" value="${type}"/>
+            </label>
+
+          </div>
+        `;
+      }
+
+      onSelectType(event) {
+        this.setAttribute('type', event.target.value);
+      }
+
+    })
+
+    // render & events using anonymous functions
+    customElements.define('inc-dec', class InputChange extends EZElement {
+      constructor() {
+        super({value: 0});
+      }
+
+      render() {
+        return html(this)`
+          <div>
+            <button onClick="${() => {
+          this.state.value--
+        }}">-</button>
+            <span>${this.state.value}</span>
+            <button onClick="${() => {
+          this.state.value++
+        }}">+</button>
+          </div>
+        `;
+      }
+    })
+
+    // small example without re-render
+    customElements.define('do-nothing', class InputChange extends EZElement {
+      constructor() {
+        super({value: 0});
+      }
+
+      render() {
+        return html(this)`
+          <div>
+            <button onClick="${() => console.log('doing nothing')}">Do Nothing</button>
+          </div>
+        `;
+      }
+    })
+
+    function* range(count) {
+      for (let i = 0; i < count; i++) {
+        yield i;
+      }
+    }
+
+    // multiple rendering in one frame
+    customElements.define('loop-rendering', class InputChange extends EZElement {
+      constructor() {
+        super({loop: 0});
+      }
+
+      render() {
+        const dept = parseInt(this.getAttribute('loop'))
+        return html(this)`
+          loop-rendering
+          <ul onclick="${() => (this.state.loop = dept)}">
+            ${
+          Array.from(range(dept)).map((_) => `<li>ITS A ME</li>`)
+        }
+          </ul>
+        `;
+      }
+    })
+
+    // multiple rendering in one frame
+    customElements.define('recursive-rendering', class InputChange extends EZElement {
+      constructor() {
+        super({loop: 0});
+      }
+
+      render() {
+        const dept = parseInt(this.getAttribute('loop'))
+        if (dept === 0) {
+          return html(this)`
+            <div style="border: solid red 1px; padding: 3px">
+            Done!
+            </div>
+            `
+        }
+
+        return html(this)`
+          <div onclick="${this.onClick}" style="border: solid red 1px; padding: 3px">
+            recursive-rendering ${dept}
+            <recursive-rendering loop="${dept - 1}"></recursive-rendering>
+          </div>
+        `;
+      }
+
+      onClick(event) {
+        event.preventDefault();
+        event.stopPropagation()
+
+        const dept = parseInt(this.getAttribute('loop'))
+        this.state.loop = dept;
+      }
+    })
+
+
+  </script>
+</head>
+<body>
+<bonne-stjean interval="50"></bonne-stjean>
+<recursive-rendering loop="5"></recursive-rendering>
+<loop-rendering loop="5"></loop-rendering>
+<stop-watch></stop-watch>
+<input-change type="button"></input-change>
+<inc-dec></inc-dec>
+<do-nothing></do-nothing>
+</body>
+</html>
