@@ -87,6 +87,9 @@ export default class EZElement<State extends DefaultState = any> extends HTMLEle
   }
 
   // Meant to be overridden
+  protected onLoad(): void {
+    log.all(this.logLevel, 'onload');
+  }
   protected render(delta: number): Renderable {
     log.all(this.logLevel, 'render', delta);
     return '';
@@ -128,7 +131,9 @@ export default class EZElement<State extends DefaultState = any> extends HTMLEle
           shadowRoot.appendChild(ui);
         }
 
+
         this.animationFrameRequest = 0;
+        this.onLoad();
       });
     }
   }
