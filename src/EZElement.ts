@@ -1,4 +1,4 @@
-type Renderable = string | HTMLElement | HTMLElement[] | [strings: string[], ...args: any[]]
+export type Renderable = string | HTMLElement | HTMLElement[] | [strings: string[], ...args: any[]]
 type ElementDB = {
   [uuid: string]: EZElement
 }
