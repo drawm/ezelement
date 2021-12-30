@@ -1,7 +1,7 @@
-export type Renderable = string | HTMLElement | HTMLElement[] | [strings: string[], ...args: any[]]
+export type Renderable = string | HTMLElement | HTMLElement[] | TemplateStringsArray | [strings: string[], ...args: any[]];
 type ElementDB = {
   [uuid: string]: EZElement
-}
+};
 type EventListenerStore = { [name: string]: EventListener };
 type DefaultState = Record<string, any>;
 
