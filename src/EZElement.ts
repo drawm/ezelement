@@ -1,9 +1,17 @@
-export type Renderable = string | HTMLElement | HTMLElement[] | TemplateStringsArray | [strings: string[], ...args: any[]];
+/**
+ * EZElement class & html template string tag
+ */
+
 type ElementDB = {
   [uuid: string]: EZElement
 };
+
 type EventListenerStore = { [name: string]: EventListener };
 type DefaultState = Record<string, any>;
+
+// Overide TemplateStringsArray so it can be seen as an array by Typescript
+type RealTemplateStringsArray = TemplateStringsArray & Array<string>;
+export type Renderable = string | HTMLElement | HTMLElement[] | RealTemplateStringsArray | [strings: string[], ...args: any[]];
 
 enum LogLevel {
   None = 0,
@@ -23,8 +31,11 @@ const log = {
 const ELEMENT_DB: ElementDB = {};
 const ELEMENT_TO_EVENT_LISTENER = new WeakMap<EZElement, EventListenerStore>();
 
-
-export default class EZElement<State extends DefaultState = any> extends HTMLElement {
+/**
+ * TODO: Maybe we don't need to extend HTMLElement https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define
+ * This would make unit testing easier short term
+ */
+export default class EZElement<State extends DefaultState = {}> extends HTMLElement {
   public get shadowRoot(): ShadowRoot | null {
     return super.shadowRoot;
   }
@@ -252,7 +263,7 @@ window.__invokeEventHandler = (event: Event, elementUUID: string, listenerName: 
  * Save references to methods passed as arguments to remove the use of `bind` or `=>` to preserve context
  * Any method passes to html will have a `this` equal to the element argument
  */
-export const html = (element: EZElement) => (strings: string[], ...args: any[]): [strings: string[], ...args: any[]] => {
+export const html = (element: EZElement) => (strings: TemplateStringsArray, ...args: any[]): [strings: TemplateStringsArray, ...args: any[]] => {
   log.all(element.logLevel, 'rendering html');
   log.debug(element.logLevel, 'html', strings, args);
 
