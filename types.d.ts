@@ -1,3 +1,3 @@
 interface Window {
-  __invokeEventHandler: (event: Event, elementUUID: string, handlerName: string) => void,
+  __get_method_handler: (elementUUID: string, handlerName: string) => VoidFunction | EventListener,
 }

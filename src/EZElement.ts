@@ -2,18 +2,24 @@
  * EZElement class & html template string tag
  */
 
+type BlankEZElement = EZElement<DefaultObject, DefaultObject>;
 type ElementDB = {
-  [uuid: string]: EZElement
+  [uuid: string]: BlankEZElement
 };
 
 type EventListenerStore = { [name: string]: EventListener };
-type DefaultState = Record<string, any>;
+type DefaultObject = Record<string, any>;
 
-// Overide TemplateStringsArray so it can be seen as an array by Typescript
+// Override TemplateStringsArray so it can be seen as an array by Typescript
 type RealTemplateStringsArray = TemplateStringsArray & Array<string>;
-export type Renderable = string | HTMLElement | HTMLElement[] | RealTemplateStringsArray | [strings: string[], ...args: any[]];
+export type Renderable =
+  string
+  | HTMLElement
+  | HTMLElement[]
+  | RealTemplateStringsArray
+  | [strings: string[], ...args: any[]];
 
-enum LogLevel {
+export enum LogLevel {
   None = 0,
   All = 1,
   Debug = 3,
@@ -29,13 +35,13 @@ const log = {
 }
 
 const ELEMENT_DB: ElementDB = {};
-const ELEMENT_TO_EVENT_LISTENER = new WeakMap<EZElement, EventListenerStore>();
+const ELEMENT_TO_EVENT_LISTENER = new WeakMap<BlankEZElement, EventListenerStore>();
 
 /**
  * TODO: Maybe we don't need to extend HTMLElement https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define
  * This would make unit testing easier short term
  */
-export default class EZElement<State extends DefaultState = {}> extends HTMLElement {
+export default class EZElement<Props extends DefaultObject = DefaultObject, State extends DefaultObject = DefaultObject> extends HTMLElement {
   public get shadowRoot(): ShadowRoot | null {
     return super.shadowRoot;
   }
@@ -53,16 +59,41 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
   public __anonymousFunctions: Set<string> = new Set<string>();
   public __uuid: string;
 
-  public state: State;
+  public state: State | DefaultObject;
+  public props: Props | DefaultObject;
+
   public logLevel: LogLevel = LogLevel.None;
 
-
   // @ts-ignore
-  constructor(state: State = {}) {
+  constructor(props: Props = {}, state: State = {}) {
     super();
-    log.all(this.logLevel, 'constructor', state);
+    log.all(this.logLevel, 'constructor', state, this);
 
-    this.state = this.linkStateToAttributes(this, state);
+    this.props = {...props};
+
+    // Set props
+    if (this.attributes.length) {
+      for (let i = this.attributes.length - 1; i >= 0; i--) {
+        const attribute = this.attributes[i];
+        const match = attribute.value.match(/__get_method_handler\('(.+)', '(.+)'\)\(/) as ([string, string, string] | null);
+        if (match && match.length) {
+          const [_, elementUUID, listenerName] = match;
+          // @ts-ignore
+          this.props[attribute.name] = window.__get_method_handler(elementUUID, listenerName);
+        } else {
+          // @ts-ignore
+          this.props[attribute.name] = attribute.value;
+        }
+      }
+    }
+
+    // Set state
+    if (state) {
+      this.state = this.linkStateToAttributes(this, state);
+    } else {
+      this.state = {};
+    }
+
 
     // If we want to do rendering, attach a shadow root
     if (this.render && typeof this.render === 'function') {
@@ -86,9 +117,18 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
     return this.shadowRoot?.querySelectorAll(selectors) ?? (new NodeList() as NodeListOf<E>);
   }
 
-  public getElementById(elementId: string): Element | null;
   public getElementById(elementId: string): HTMLElement | null {
     return this.shadowRoot?.getElementById(elementId) ?? null;
+  }
+
+  // Return a Selection object regardless if we use shadowroot or not (important on firefox vs chrome)
+  public getSelection(): Selection {
+    // @ts-ignore: ShadowRoot has a getSelection method on Chrome but not on Firefox
+    return this.shadowRoot?.getSelection
+      // @ts-ignore: ShadowRoot has a getSelection method on Chrome but not on Firefox
+      ? this.shadowRoot?.getSelection()
+      // Note: Firefox getSelection always give you the right element, Chrome will give back 'body' if the element is in a shadowroot
+      : window.getSelection();
   }
 
   // Shadow dom callbacks
@@ -101,6 +141,7 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
   protected onLoad(): void {
     log.all(this.logLevel, 'onload');
   }
+
   protected render(delta: number): Renderable {
     log.all(this.logLevel, 'render', delta);
     return '';
@@ -128,7 +169,7 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
               string + (parsedArgs?.shift() ?? '')
             )).join('');
 
-          // Assume any other array structure is a list of html nodes
+            // Assume any other array structure is a list of html nodes
           } else {
             // Remove all nodes, before we can add more
             while (shadowRoot.lastChild) {
@@ -177,9 +218,6 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
     ELEMENT_DB[this.__uuid] = this;
   }
 
-  // adoptedCallback(...args) {
-  // }
-
   // Extend get&set attribute to sync with state
   // This enables us to call attributeChangedCallback automatically &
   // maintain types when using state directly
@@ -207,7 +245,7 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
     }
   }
 
-  linkStateToAttributes(element: EZElement<State>, state: State): State {
+  linkStateToAttributes(element: EZElement<Props, State>, state: State): State {
     type StateDescriptor = Record<keyof State, PropertyDescriptor>;
 
     log.all(this.logLevel, 'linkStateToAttributes');
@@ -216,9 +254,10 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
     const properties = Object
       .keys(state)
       .reduce((acc: StateDescriptor, key: keyof State) => {
+        const stringKey = `${key}`;
         acc[key] = {
           get() {
-            return element.getState(key);
+            return element.getState(key as keyof State);
           },
           set(value: any) {
             element.setState(key, value);
@@ -240,12 +279,15 @@ export default class EZElement<State extends DefaultState = {}> extends HTMLElem
  * GC to free them when needed without the need to do it manually
  * Elements can easily be freed in base class, so we can use a plain old object
  */
-window.__invokeEventHandler = (event: Event, elementUUID: string, listenerName: string) => {
+window.__get_method_handler = (elementUUID: string, listenerName: string): VoidFunction | EventListener => {
   // Find the element associated with elementUUID
   const element = ELEMENT_DB[elementUUID];
 
   if (!ELEMENT_TO_EVENT_LISTENER.has(element)) {
-    throw new Error(`Can't find eventHandlers for element ${element}"`);
+    throw new Error(`Can't find eventHandlers for element ${element} (${JSON.stringify({
+      elementUUID,
+      listenerName
+    })})"`);
   }
 
   // Find event listener associated with both elementUUID & listenerName
@@ -255,15 +297,14 @@ window.__invokeEventHandler = (event: Event, elementUUID: string, listenerName: 
     throw new Error(`Can't find handler ${listenerName} in ${eventHandlers}"`);
   }
 
-  // Call the event handler with its host element as its context
-  listener.call(element, event);
+  return listener.bind(element);
 };
 
 /**
  * Save references to methods passed as arguments to remove the use of `bind` or `=>` to preserve context
  * Any method passes to html will have a `this` equal to the element argument
  */
-export const html = (element: EZElement) => (strings: TemplateStringsArray, ...args: any[]): [strings: TemplateStringsArray, ...args: any[]] => {
+export const html = (element: BlankEZElement) => (strings: TemplateStringsArray, ...args: any[]): [strings: TemplateStringsArray, ...args: any[]] => {
   log.all(element.logLevel, 'rendering html');
   log.debug(element.logLevel, 'html', strings, args);
 
@@ -293,7 +334,7 @@ export const html = (element: EZElement) => (strings: TemplateStringsArray, ...a
 
   /**
    * Save a reference to each callback and its HtmlElement
-   * Change the HTML to call the method using the new reference (using `window.__invokeEventHandler`).
+   * Change the HTML to call the method using the new reference (using `window.__get_method_handler`).
    * This makes writing HTML easier as you don't have to bind manually (the scope is always the HtmlElement).
    * It also doesn't waste memory creating new functions using bing or fat arrow
    */
@@ -331,13 +372,13 @@ export const html = (element: EZElement) => (strings: TemplateStringsArray, ...a
 
     log.debug(element.logLevel, 'html', 'methodName', method.name);
 
-    // Save the method aside so we can refer to it later.
+    // Save the method aside to reference it later
     // We have to use a new lookup table (instead of using element) so we can support anonymous methods
     eventListeners[method.name] = method;
 
     // `event` is magically present when creating even handlers in html
     // `arg.name` is used to reference the handler method when the event is triggered
-    const htmlCallback = `window.__invokeEventHandler(event, '${element.__uuid}', '${method.name}')`;
+    const htmlCallback = `window.__get_method_handler('${element.__uuid}', '${method.name}')(event)`;
     log.debug(element.logLevel, 'html', 'methodName', method.name);
 
     return htmlCallback;
