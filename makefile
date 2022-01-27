@@ -3,14 +3,14 @@ dev:
 		--no-check \
         --unstable \
         --reload \
-		--config tsconfig.json \
+		--config deno.json \
 		--watch \
 		src/*.test.ts
 test:
 	deno test \
         --unstable \
         --reload \
-		--config tsconfig.json \
+		--config deno.json \
 		--watch \
 		src/*.test.ts
 
@@ -19,7 +19,7 @@ build:
 	deno bundle --unstable \
         --no-check \
         --reload \
-		--config tsconfig.json \
+		--config deno.json \
 		./src/mod.ts \
 		out/index.js
 
