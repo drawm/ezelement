@@ -29,12 +29,34 @@ class EZElement extends HTMLElement {
     __anonymousFunctions = new Set();
     __uuid;
     state;
+    props;
     logLevel = LogLevel.None;
-    constructor(state1 = {
+    constructor(props = {
+    }, state = {
     }){
         super();
-        log.all(this.logLevel, 'constructor', state1);
-        this.state = this.linkStateToAttributes(this, state1);
+        log.all(this.logLevel, 'constructor', state, this);
+        this.props = {
+            ...props
+        };
+        if (this.attributes.length) {
+            for(let i = this.attributes.length - 1; i >= 0; i--){
+                const attribute = this.attributes[i];
+                const match = attribute.value.match(/__get_method_handler\('(.+)', '(.+)'\)\(/);
+                if (match && match.length) {
+                    const [_, elementUUID, listenerName] = match;
+                    this.props[attribute.name] = window.__get_method_handler(elementUUID, listenerName);
+                } else {
+                    this.props[attribute.name] = attribute.value;
+                }
+            }
+        }
+        if (state) {
+            this.state = this.linkStateToAttributes(this, state);
+        } else {
+            this.state = {
+            };
+        }
         if (this.render && typeof this.render === 'function') {
             this.attachShadow({
                 mode: 'open'
@@ -53,9 +75,15 @@ class EZElement extends HTMLElement {
     getElementById(elementId) {
         return this.shadowRoot?.getElementById(elementId) ?? null;
     }
+    getSelection() {
+        return this.shadowRoot?.getSelection ? this.shadowRoot?.getSelection() : window.getSelection();
+    }
     attributeChangedCallback() {
         log.all(this.logLevel, 'attributeChangedCallback');
         this.renderNextFrame();
+    }
+    onLoad() {
+        log.all(this.logLevel, 'onload');
     }
     render(delta) {
         log.all(this.logLevel, 'render', delta);
@@ -84,6 +112,7 @@ class EZElement extends HTMLElement {
                     shadowRoot.appendChild(ui);
                 }
                 this.animationFrameRequest = 0;
+                this.onLoad();
             });
         }
     }
@@ -133,6 +162,7 @@ class EZElement extends HTMLElement {
     linkStateToAttributes(element, state) {
         log.all(this.logLevel, 'linkStateToAttributes');
         const properties = Object.keys(state).reduce((acc, key)=>{
+            `${key}`;
             acc[key] = {
                 get () {
                     return element.getState(key);
@@ -155,10 +185,13 @@ class EZElement extends HTMLElement {
         return newState;
     }
 }
-window.__invokeEventHandler = (event, elementUUID, listenerName)=>{
+window.__get_method_handler = (elementUUID, listenerName)=>{
     const element = ELEMENT_DB[elementUUID];
     if (!ELEMENT_TO_EVENT_LISTENER.has(element)) {
-        throw new Error(`Can't find eventHandlers for element ${element}"`);
+        throw new Error(`Can't find eventHandlers for element ${element} (${JSON.stringify({
+            elementUUID,
+            listenerName
+        })})"`);
     }
     const eventHandlers = ELEMENT_TO_EVENT_LISTENER.get(element) ?? {
     };
@@ -166,9 +199,9 @@ window.__invokeEventHandler = (event, elementUUID, listenerName)=>{
     if (!listener) {
         throw new Error(`Can't find handler ${listenerName} in ${eventHandlers}"`);
     }
-    listener.call(element, event);
+    return listener.bind(element);
 };
-const html1 = (element)=>(strings, ...args)=>{
+const html = (element)=>(strings, ...args)=>{
         log.all(element.logLevel, 'rendering html');
         log.debug(element.logLevel, 'html', strings, args);
         let eventListeners = {
@@ -211,7 +244,7 @@ const html1 = (element)=>(strings, ...args)=>{
             }
             log.debug(element.logLevel, 'html', 'methodName', method.name);
             eventListeners[method.name] = method;
-            const htmlCallback = `window.__invokeEventHandler(event, '${element.__uuid}', '${method.name}')`;
+            const htmlCallback = `window.__get_method_handler('${element.__uuid}', '${method.name}')(event)`;
             log.debug(element.logLevel, 'html', 'methodName', method.name);
             return htmlCallback;
         });
@@ -221,5 +254,6 @@ const html1 = (element)=>(strings, ...args)=>{
         ];
     }
 ;
-export { html1 as html };
+export { LogLevel as LogLevel };
+export { html as html };
 export { EZElement as default };

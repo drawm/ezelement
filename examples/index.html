@@ -8,7 +8,7 @@
 
     customElements.define('bonne-stjean', class BonneStJean extends EZElement {
       constructor() {
-        super({
+        super({}, {
           message: 'nobody',
           celebrate: false,
         });
@@ -22,15 +22,15 @@
 
       render() {
         return html(this)`
-              <style>
-                  span {
-                      color: ${this.state.celebrate ? 'blue' : 'red'};
-                  }
-              </style>
-              <span onclick="${this.onChangeStyle}">
-                  Hello ${this.state.message ?? 'nobody'}
-              </span>
-            `;
+          <style>
+              span {
+                  color: ${this.state.celebrate ? 'blue' : 'red'};
+              }
+          </style>
+          <span onclick="${this.onChangeStyle}">
+              Hello ${this.state.message ?? 'nobody'}
+          </span>
+        `;
       }
 
       onChangeStyle() {
@@ -60,7 +60,7 @@
     // Change state based on interval, re-render, and change interval based on UI interaction
     customElements.define('stop-watch', class StopWatch extends EZElement {
       constructor() {
-        super({
+        super({}, {
           time: 0,
           intervalID: undefined,
         })
@@ -119,7 +119,7 @@
     // render & events using anonymous functions
     customElements.define('inc-dec', class InputChange extends EZElement {
       constructor() {
-        super({value: 0});
+        super({}, {value: 0});
       }
 
       render() {
@@ -140,7 +140,7 @@
     // small example without re-render
     customElements.define('do-nothing', class InputChange extends EZElement {
       constructor() {
-        super({value: 0});
+        super({}, {value: 0});
       }
 
       render() {
@@ -161,7 +161,7 @@
     // multiple rendering in one frame
     customElements.define('loop-rendering', class InputChange extends EZElement {
       constructor() {
-        super({loop: 0});
+        super({}, {loop: 0});
       }
 
       render() {
@@ -180,7 +180,7 @@
     // multiple rendering in one frame
     customElements.define('recursive-rendering', class InputChange extends EZElement {
       constructor() {
-        super({loop: 0});
+        super({}, {loop: 0});
       }
 
       render() {
@@ -210,6 +210,49 @@
       }
     })
 
+    // method passing with props
+    customElements.define('nice-button', class NiceButton extends EZElement {
+      constructor() {
+        super();
+      }
+
+      render() {
+        return html(this)`
+          <button onclick="${this.onClick}">
+            I'm a nice button, click me!
+          </button>
+        `;
+      }
+
+      onClick(event) {
+        // Will call changeColor()
+        this.props.onbuttonpressed();
+      }
+    })
+    customElements.define('in-and-out', class InputChange extends EZElement {
+      colors = ['red', 'black', 'blue', 'green'];
+
+      constructor() {
+        super({}, {color: 0});
+      }
+
+      changeColor() {
+        this.state.color++;
+        if (this.state.color >= this.colors.length) {
+          this.state.color = 0;
+        }
+      }
+
+      render() {
+        return html(this)`
+          <div style="color: ${this.colors[this.state.color]}; border: solid ${this.colors[this.state.color]} 1px; padding: 3px">
+            I'll change color if you press the button
+            <nice-button onbuttonpressed="${this.changeColor}"></nice-button>
+          </div>
+        `;
+      }
+
+    });
 
   </script>
 </head>
@@ -221,5 +264,6 @@
 <input-change type="button"></input-change>
 <inc-dec></inc-dec>
 <do-nothing></do-nothing>
+<in-and-out></in-and-out>
 </body>
 </html>

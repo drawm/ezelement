@@ -42,14 +42,20 @@ For more examples, check the [examples/](examples/ folder) in the repo.
 ```
 
 ## Attributes
+
 You can specify a set of attributes who will re-render the component when changed.
-Read [Using the life cycle callback article on MDN](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks) to understand how it works internally.
+Read [Using the life cycle callback article on MDN](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks)
+to understand how it works internally.
 
 All you need to do is:
+
 1. Add a `static observedAttributes = ['an-attribute'];` with all the attributes you want to trigger a render
-2. Use DOM [`getAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAttribute) & [`setAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setAttribute) where you want to use the attributes
+2. Use DOM [`getAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAttribute)
+   & [`setAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setAttribute) where you want to use the
+   attributes
 
 ```html
+
 <script type="module">
   import EZElement from "../out/index.js";
 
@@ -79,14 +85,76 @@ All you need to do is:
 <button onclick="onChangeName()">Change name</button>
 ```
 
+## Props
+
+Attributes are great but limited,
+using [`getAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAttribute)
+& [`setAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setAttribute) can be overly verbose and they
+only work with strings!
+By using `html` tag template you can pass methods like you would an attribute.
+
+```html
+
+<script type="module">
+  import EZElement from "../out/index.js";
+
+  // method passing with props
+  customElements.define('nice-button', class NiceButton extends EZElement {
+    constructor() {
+      super();
+    }
+
+    render() {
+      return html(this)`
+        <button onclick="${this.onClick}">
+          I'm a nice button, click me!
+        </button>
+      `;
+    }
+
+    onClick(event) {
+      // Will call changeColor()
+      this.props.onbuttonpressed();
+    }
+  })
+  
+  customElements.define('in-and-out', class InputChange extends EZElement {
+    colors = ['red', 'black', 'blue', 'green'];
+
+    constructor() {
+      super({}, {color: 0});
+    }
+
+    changeColor() {
+      this.state.color++;
+      if (this.state.color >= this.colors.length) {
+        this.state.color = 0;
+      }
+    }
+
+    render() {
+      return html(this)`
+        <div style="color: ${this.colors[this.state.color]}; border: solid ${this.colors[this.state.color]} 1px; padding: 3px">
+          I'll change color if you press the button
+          <nice-button onbuttonpressed="${this.changeColor}"></nice-button>
+        </div>
+      `;
+    }
+
+  });
+</script>
+
+<in-and-out></in-and-out>
+```
+
 ## State
-Attributes are great but limited, using [`getAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAttribute) & [`setAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setAttribute) can be overly verbose and they only work with strings!
-Luckily EZElement provide a simple `state` object to automatically re-render when updated.
+When a property of `state` is changed, the element is automatically scheduled to re-render during the next animation frame
 
 1. Pass an object to the parent constructor to use it as a state.
 2. Edit the state property to your hearts content!
 
 ```html
+
 <script type="module">
   import EZElement from "../out/index.js";
 
@@ -119,14 +187,14 @@ Luckily EZElement provide a simple `state` object to automatically re-render whe
 ```
 
 ## Events
-Events requires are made easy with EZElement.
-Simply use the `html` template  string to automatically wire function to your HTML.
-As a bonus, they will be automatically wired to your element's scope so you can use any notation you like.
+Events are made easy with EZElement. Simply use the `html` tag template to automatically wire function to
+your HTML. As a bonus, they will be automatically bind to your element's scope.
 
 1. Use the `html` template string generate your HTML string
 2. Add methods to your HTML
 
 ```html
+
 <script type="module">
   import EZElement, {html} from "../out/index.js";
 
@@ -157,9 +225,11 @@ As a bonus, they will be automatically wired to your element's scope so you can 
 ```
 
 ## Advanced templating
+
 For even better templating you can use [contemplating](https://github.com/drawm/contemplating/) in your `render` method.
 
 ```html
+
 <script type="module">
   import EZElement, {html, template} from "../out/index.js";
 
@@ -176,10 +246,10 @@ For even better templating you can use [contemplating](https://github.com/drawm/
         <button onclick="${this.onChangeName}">Change name</button>
         <ul>
           ${
-            this.state.name
+          this.state.name
               .split(',')
               .map(name => `<li>Hello ${name.trim()}</li>`)
-            }
+          }
          </ul>
       `);
     }
@@ -197,11 +267,12 @@ For even better templating you can use [contemplating](https://github.com/drawm/
 ```
 
 # Features
+
 * No over-rendering, EZElement will only render once per frame at most.
 * JSX style templating & event callbacks without transpiling
 * No binding or wrapping methods
 * No dependencies
 * Small codebase:
-  * Fits in one file under 350 lines of Typescript code
-  * Or under 225 transpiled non minified js code
-  * Or 4KB, (~4000 characters) minified js code
+    * Fits in one file under 350 lines of Typescript code
+    * Or under 225 transpiled non minified js code
+    * Or 4KB, (~4000 characters) minified js code
