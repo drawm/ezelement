@@ -2,6 +2,18 @@
  * EZElement class & html template string tag
  */
 
+// Inspired from TS typedef lib.dom.d.ts of Element.querySelector
+type QuerySelectorMethod = <E extends HTMLElement = HTMLElement>(selectors: string) => E | null;
+
+// Inspired from TS typedef lib.dom.d.ts of Element.querySelectorAll
+type QuerySelectorAllMethod = <E extends HTMLElement = HTMLElement>(selectors: string) => NodeListOf<E>;
+
+// Inspired from TS typedef lib.dom.d.ts of Document.getElementById
+// Use Element instead of HTMLElement to maintain consistency with QuerySelectorAllMethod & QuerySelectorMethod
+type GetElementByIdMethod = <E extends HTMLElement = HTMLElement>(elementId: string) => E | null;
+
+
+
 type BlankEZElement = EZElement<DefaultObject, DefaultObject>;
 type ElementDB = {
   [uuid: string]: BlankEZElement
@@ -37,10 +49,6 @@ const log = {
 const ELEMENT_DB: ElementDB = {};
 const ELEMENT_TO_EVENT_LISTENER = new WeakMap<BlankEZElement, EventListenerStore>();
 
-/**
- * TODO: Maybe we don't need to extend HTMLElement https://developer.mozilla.org/en-US/docs/Web/API/CustomElementRegistry/define
- * This would make unit testing easier short term
- */
 export default class EZElement<Props extends DefaultObject = DefaultObject, State extends DefaultObject = DefaultObject> extends HTMLElement {
   public get shadowRoot(): ShadowRoot | null {
     return super.shadowRoot;
@@ -105,20 +113,42 @@ export default class EZElement<Props extends DefaultObject = DefaultObject, Stat
     EZElement.__count[this.tagName] = count + 1;
   }
 
-  public querySelector<K extends keyof HTMLElementTagNameMap>(selectors: K): HTMLElementTagNameMap[K] | null;
-  public querySelector<K extends keyof SVGElementTagNameMap>(selectors: K): SVGElementTagNameMap[K] | null;
-  public querySelector<E extends Element = Element>(elementId: string): E | null {
-    return this.shadowRoot?.querySelector(elementId) ?? null;
+  private _querySelector:QuerySelectorMethod | undefined;
+  // @ts-ignore: TS complains about this method already existing. We are overriding it, its want we want.
+  get querySelector():QuerySelectorMethod {
+    if(!this._querySelector){
+        this._querySelector = this.shadowRoot?.querySelector.bind(this.shadowRoot) ||
+            this.querySelector ||
+            document.querySelector;
+    }
+
+    return this._querySelector;
   }
 
-  public querySelectorAll<K extends keyof HTMLElementTagNameMap>(selectors: K): NodeListOf<HTMLElementTagNameMap[K]>;
-  public querySelectorAll<K extends keyof SVGElementTagNameMap>(selectors: K): NodeListOf<SVGElementTagNameMap[K]>;
-  public querySelectorAll<E extends Element = Element>(selectors: string): NodeListOf<E> {
-    return this.shadowRoot?.querySelectorAll(selectors) ?? (new NodeList() as NodeListOf<E>);
+  private _querySelectorAll:QuerySelectorAllMethod | undefined;
+  // @ts-ignore: TS complains about this method already existing. We are overriding it, its want we want.
+  get querySelectorAll():QuerySelectorAllMethod {
+    if(!this._querySelectorAll){
+        this._querySelectorAll = this.shadowRoot?.querySelectorAll.bind(this.shadowRoot) ||
+            this.querySelectorAll ||
+            document.querySelectorAll;
+    }
+
+    return this._querySelectorAll;
   }
 
-  public getElementById(elementId: string): HTMLElement | null {
-    return this.shadowRoot?.getElementById(elementId) ?? null;
+  private _getElementById:GetElementByIdMethod | undefined;
+  //
+  // @ts-ignore: TS complains about this method already existing. We are overriding it, its want we want.
+  get getElementById():GetElementByIdMethod {
+    if(!this._getElementById){
+        // @ts-ignore: Prevent complains about GetElementByIdMethod E not matching because it could be a subtype of HTMLElement (which fit the implementation, the official type definition is wrong)
+        this._getElementById = this.shadowRoot?.getElementById.bind(this.shadowRoot) ||
+            this.getElementById ||
+            document.getElementById;
+    }
+
+    return this._getElementById as GetElementByIdMethod;
   }
 
   // Return a Selection object regardless if we use shadowroot or not (important on firefox vs chrome)
