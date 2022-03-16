@@ -50,6 +50,7 @@ const ELEMENT_DB: ElementDB = {};
 const ELEMENT_TO_EVENT_LISTENER = new WeakMap<BlankEZElement, EventListenerStore>();
 
 export default class EZElement<Props extends DefaultObject = DefaultObject, State extends DefaultObject = DefaultObject> extends HTMLElement {
+  private originalChildren: string;
   public get shadowRoot(): ShadowRoot | null {
     return super.shadowRoot;
   }
@@ -75,6 +76,7 @@ export default class EZElement<Props extends DefaultObject = DefaultObject, Stat
   // @ts-ignore
   constructor(props: Props = {}, state: State = {}) {
     super();
+    this.originalChildren = this.innerHTML;
     log.all(this.logLevel, 'constructor', state, this);
 
     this.props = {...props};
@@ -172,8 +174,8 @@ export default class EZElement<Props extends DefaultObject = DefaultObject, Stat
     log.all(this.logLevel, 'onload');
   }
 
-  protected render(delta: number): Renderable {
-    log.all(this.logLevel, 'render', delta);
+  protected render(children?:string | Renderable): Renderable {
+    log.all(this.logLevel, 'render');
     return '';
   }
 
@@ -182,8 +184,8 @@ export default class EZElement<Props extends DefaultObject = DefaultObject, Stat
     if (this.shadowRoot && !this.animationFrameRequest) {
       const shadowRoot = this.shadowRoot;
 
-      this.animationFrameRequest = requestAnimationFrame((delta: number) => {
-        const ui: Renderable = this.render(delta);
+      this.animationFrameRequest = requestAnimationFrame(() => {
+        const ui: Renderable = this.render(this.originalChildren);
 
         // Simple string, let the browser parse it
         if (typeof ui === 'string') {
