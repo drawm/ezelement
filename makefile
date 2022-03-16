@@ -15,7 +15,7 @@ test:
 		src/*.test.ts
 
 build:
-	deno cache --no-check main.ts out/main.ts
+	deno cache --no-check ./src/mod.ts ./out/index.js
 	deno bundle --unstable \
         --no-check \
         --reload \
