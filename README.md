@@ -4,8 +4,8 @@ EZ Element
 > Custom elements made easy
 ---
 
-EZ Element is a no-dependency, easy to grasp, custom element helper. Its goal is to makes working with custom elements
-easy enough you reconsider using other library (ie: React, Vue & friends)
+EZ Element is a no-dependency, easy to grasp, custom element helper. Its goal is to make working with custom elements
+easy enough you reconsider using other libraries (ie: React, Vue & friends)
 
 Based on the same principles of [contemplating](https://github.com/drawm/contemplating/)
 
@@ -19,8 +19,8 @@ For more examples, check the [examples/](examples/ folder) in the repo.
 ## Smallest example
 
 1. Create your custom element class & extend `EZElement`
-2. Add a `render` method to generate a string of `html`
-3. Register your new element and use it in your HTML
+2. Add a `render` method to generate a string of `HTML`
+3. Register your new element and use it in your `HTML`
 
 ```html
 
@@ -43,7 +43,7 @@ For more examples, check the [examples/](examples/ folder) in the repo.
 
 ## Attributes
 
-You can specify a set of attributes who will re-render the component when changed.
+You can specify a set of attributes that will re-render the component when changed.
 Read [Using the life cycle callback article on MDN](https://developer.mozilla.org/en-US/docs/Web/Web_Components/Using_custom_elements#using_the_lifecycle_callbacks)
 to understand how it works internally.
 
@@ -91,7 +91,7 @@ Attributes are great but limited,
 using [`getAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/getAttribute)
 & [`setAttribute`](https://developer.mozilla.org/en-US/docs/Web/API/Element/setAttribute) can be overly verbose and they
 only work with strings!
-By using `html` tag template you can pass methods like you would an attribute.
+By using the `html` tag template you can pass methods like you would an attribute.
 
 ```html
 
@@ -151,7 +151,7 @@ By using `html` tag template you can pass methods like you would an attribute.
 When a property of `state` is changed, the element is automatically scheduled to re-render during the next animation frame
 
 1. Pass an object to the parent constructor to use it as a state.
-2. Edit the state property to your hearts content!
+2. Edit the state property to your heart's content!
 
 ```html
 
@@ -187,10 +187,10 @@ When a property of `state` is changed, the element is automatically scheduled to
 ```
 
 ## Events
-Events are made easy with EZElement. Simply use the `html` tag template to automatically wire function to
-your HTML. As a bonus, they will be automatically bind to your element's scope.
+Events are made easy with EZElement. Simply use the `HTML` tag template to automatically wire functions to
+your HTML. As a bonus, they will be automatically bound to your element's scope.
 
-1. Use the `html` template string generate your HTML string
+1. Use the `HTML` template string to generate your HTML string
 2. Add methods to your HTML
 
 ```html
